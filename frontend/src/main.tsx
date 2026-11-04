@@ -890,7 +890,14 @@ function Module({
       />
     );
   if (page === "dishes")
-    return <DishesLibrary token={token} groupId={groupId} back={back} currentUserId={currentUserId} />;
+    return (
+      <DishesLibrary
+        token={token}
+        groupId={groupId}
+        back={back}
+        currentUserId={currentUserId}
+      />
+    );
   return (
     <div className="module-page">
       <button className="back-link" onClick={back}>
@@ -946,7 +953,10 @@ function DishesLibrary({
         token={token}
         groupId={groupId}
         initialDish={editing ?? undefined}
-        back={() => { setCreating(false); setEditing(null); }}
+        back={() => {
+          setCreating(false);
+          setEditing(null);
+        }}
         onSaved={() => {
           setCreating(false);
           setEditing(null);
@@ -1031,7 +1041,17 @@ function DishesLibrary({
             </span>
             <span>Créé par {selected.creatorFirstName ?? "un membre"}</span>
           </div>
-          {selected.createdBy === currentUserId && <button className="outline-button" onClick={() => { setEditing(selected); setSelected(null); }}>Modifier ce plat</button>}
+          {selected.createdBy === currentUserId && (
+            <button
+              className="outline-button"
+              onClick={() => {
+                setEditing(selected);
+                setSelected(null);
+              }}
+            >
+              Modifier ce plat
+            </button>
+          )}
           <h3>Ingrédients</h3>
           <div className="detail-ingredients">
             {selected.ingredients.map((ingredient) => (
@@ -1240,8 +1260,22 @@ function Meals({
     setDescription(initialDish.description ?? "");
     setInstructions(initialDish.instructions ?? "");
     setCategory(initialDish.category ?? "other");
-    setIngredients(initialDish.ingredients.map((ingredient) => ({ ...ingredient, quantity: String(ingredient.quantity), unitId: ingredient.unitId ?? "", notes: ingredient.notes ?? "" })));
-    setSteps((initialDish.steps ?? []).map((step) => ({ stepNumber: step.stepNumber, description: step.description, durationMinutes: step.durationMinutes == null ? "" : String(step.durationMinutes) })));
+    setIngredients(
+      initialDish.ingredients.map((ingredient) => ({
+        ...ingredient,
+        quantity: String(ingredient.quantity),
+        unitId: ingredient.unitId ?? "",
+        notes: ingredient.notes ?? "",
+      })),
+    );
+    setSteps(
+      (initialDish.steps ?? []).map((step) => ({
+        stepNumber: step.stepNumber,
+        description: step.description,
+        durationMinutes:
+          step.durationMinutes == null ? "" : String(step.durationMinutes),
+      })),
+    );
   }, [initialDish]);
 
   useEffect(() => {
