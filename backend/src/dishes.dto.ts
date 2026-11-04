@@ -26,6 +26,23 @@ export class DishIngredientDto {
   notes?: string;
 }
 
+export class DishStepDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  stepNumber!: number;
+
+  @IsString()
+  @IsNotEmpty()
+  description!: string;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  durationMinutes?: number;
+}
+
 export class CreateDishDto {
   @IsString()
   @IsNotEmpty()
@@ -57,7 +74,15 @@ export class CreateDishDto {
   @IsOptional()
   instructions?: string;
 
+  @IsString()
+  @IsOptional()
+  category?: string;
+
   @ValidateNested({ each: true })
   @Type(() => DishIngredientDto)
   ingredients!: DishIngredientDto[];
+
+  @ValidateNested({ each: true })
+  @Type(() => DishStepDto)
+  steps!: DishStepDto[];
 }

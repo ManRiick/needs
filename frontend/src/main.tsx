@@ -31,12 +31,41 @@ type Dish = {
   id: string;
   name: string;
   description?: string;
+  category?: string;
+  servings?: number;
+  preparationTime?: number;
+  cookingTime?: number;
+  createdBy?: string;
+  creatorFirstName?: string;
+  creatorLastName?: string;
+  createdAt?: string;
+  updatedAt?: string;
   instructions?: string;
   ingredients: (Product & {
     quantity: number;
     unitId?: string;
+    unit?: string;
     notes?: string;
   })[];
+  steps?: {
+    id: string;
+    stepNumber: number;
+    description: string;
+    durationMinutes?: number;
+  }[];
+};
+type MealEntry = {
+  id: string;
+  date: string;
+  mealType: string;
+  servings: number;
+  dishId: string;
+  dishName: string;
+};
+type RecipeStep = {
+  stepNumber: number;
+  description: string;
+  durationMinutes: string;
 };
 
 // Envoie requête
@@ -437,6 +466,7 @@ function NoFamily({
 const nav = [
   { id: "overview", icon: "⌂", label: "Vue d'ensemble" },
   { id: "meals", icon: "◌", label: "Menus de la semaine" },
+  { id: "dishes", icon: "✣", label: "Plats" },
   { id: "shopping", icon: "□", label: "Liste de courses" },
   { id: "lists", icon: "☷", label: "Toutes les listes" },
   { id: "tasks", icon: "✓", label: "Tâches" },
@@ -563,6 +593,8 @@ function Shell({
               back={() => onNavigate("overview")}
               token={token}
               groupId={active.id}
+              onNavigate={onNavigate}
+              currentUserId={user.id}
             />
           )}
         </div>
@@ -837,15 +869,28 @@ function Module({
   back,
   token,
   groupId,
+  onNavigate,
+  currentUserId,
 }: {
   page: string;
   back: () => void;
   token: string;
   groupId: string;
+  onNavigate: (page: string) => void;
+  currentUserId: string;
 }) {
   const item = nav.find((entry) => entry.id === page);
   if (page === "meals")
-    return <Meals token={token} groupId={groupId} back={back} />;
+    return (
+      <WeeklyMenu
+        token={token}
+        groupId={groupId}
+        back={back}
+        onNavigate={onNavigate}
+      />
+    );
+  if (page === "dishes")
+    return <DishesLibrary token={token} groupId={groupId} back={back} currentUserId={currentUserId} />;
   return (
     <div className="module-page">
       <button className="back-link" onClick={back}>
@@ -865,15 +910,314 @@ function Module({
   );
 }
 
+// Affiche bibliothèque
+function DishesLibrary({
+  token,
+  groupId,
+  back,
+  currentUserId,
+}: {
+  token: string;
+  groupId: string;
+  back: () => void;
+  currentUserId: string;
+}) {
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Dish | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Dish | null>(null);
+  const [error, setError] = useState("");
+
+  // Charge bibliothèque
+  const loadDishes = () =>
+    request<Dish[]>(`/groups/${groupId}/dishes`, token)
+      .then(setDishes)
+      .catch((reason: Error) => setError(reason.message));
+  useEffect(() => {
+    void loadDishes();
+  }, [groupId, token]);
+  const visible = dishes.filter((dish) =>
+    dish.name.toLowerCase().includes(query.toLowerCase()),
+  );
+  if (creating || editing)
+    return (
+      <Meals
+        token={token}
+        groupId={groupId}
+        initialDish={editing ?? undefined}
+        back={() => { setCreating(false); setEditing(null); }}
+        onSaved={() => {
+          setCreating(false);
+          setEditing(null);
+          void loadDishes();
+        }}
+      />
+    );
+  return (
+    <div className="dish-library">
+      <button className="back-link" onClick={back}>
+        ← Vue d'ensemble
+      </button>
+      <div className="page-heading">
+        <div>
+          <p className="kicker">Family Hub / Bibliothèque</p>
+          <h1>
+            Plats<span className="heading-dot">.</span>
+          </h1>
+          <p className="muted">Vos recettes familiales, prêtes à retrouver.</p>
+        </div>
+        <button
+          className="primary-button library-create"
+          onClick={() => setCreating(true)}
+        >
+          + Créer un plat
+        </button>
+      </div>
+      <input
+        className="library-search"
+        placeholder="Rechercher un plat"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+      />
+      {error && <p className="form-message">{error}</p>}
+      {!visible.length ? (
+        <Empty
+          icon="✣"
+          title="Aucun plat enregistré"
+          text="Créez votre première recette pour commencer votre bibliothèque."
+          action="Créer un plat"
+          onClick={() => setCreating(true)}
+        />
+      ) : (
+        <div className="dish-card-grid">
+          {visible.map((dish) => (
+            <button
+              className="dish-card"
+              key={dish.id}
+              onClick={() => setSelected(dish)}
+            >
+              <span className="dish-card-mark">✣</span>
+              <strong>{dish.name}</strong>
+              <small>
+                {dish.ingredients.length} ingrédient
+                {dish.ingredients.length > 1 ? "s" : ""} ·{" "}
+                {dish.preparationTime ?? 0} min de préparation
+              </small>
+              <small>
+                {dish.creatorFirstName
+                  ? `Par ${dish.creatorFirstName} ${dish.creatorLastName ?? ""}`
+                  : "Recette familiale"}
+              </small>
+            </button>
+          ))}
+        </div>
+      )}
+      {selected && (
+        <div className="dish-detail">
+          <button className="back-link" onClick={() => setSelected(null)}>
+            ← Bibliothèque
+          </button>
+          <p className="kicker">Recette</p>
+          <h2>{selected.name}</h2>
+          <p className="muted">
+            {selected.description || "Une recette partagée avec le groupe."}
+          </p>
+          <div className="detail-meta">
+            <span>{selected.servings ?? 1} portion(s)</span>
+            <span>
+              {(selected.preparationTime ?? 0) + (selected.cookingTime ?? 0)}{" "}
+              min au total
+            </span>
+            <span>Créé par {selected.creatorFirstName ?? "un membre"}</span>
+          </div>
+          {selected.createdBy === currentUserId && <button className="outline-button" onClick={() => { setEditing(selected); setSelected(null); }}>Modifier ce plat</button>}
+          <h3>Ingrédients</h3>
+          <div className="detail-ingredients">
+            {selected.ingredients.map((ingredient) => (
+              <div key={ingredient.id}>
+                <span>{ingredient.name}</span>
+                <b>
+                  {ingredient.quantity} {ingredient.unit ?? ""}
+                </b>
+                {ingredient.notes && <small>{ingredient.notes}</small>}
+              </div>
+            ))}
+          </div>
+          <h3>Préparation</h3>
+          <ol className="steps-list">
+            {(selected.steps ?? []).map((step) => (
+              <li key={step.id}>
+                <span>{step.description}</span>
+                {step.durationMinutes != null && (
+                  <small>{step.durationMinutes} min</small>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Affiche menu
+function WeeklyMenu({
+  token,
+  groupId,
+  back,
+  onNavigate,
+}: {
+  token: string;
+  groupId: string;
+  back: () => void;
+  onNavigate: (page: string) => void;
+}) {
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [entries, setEntries] = useState<MealEntry[]>([]);
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [mealType, setMealType] = useState("dinner");
+  const [dishId, setDishId] = useState("");
+  const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const load = () =>
+    Promise.all([
+      request<Dish[]>(`/groups/${groupId}/dishes`, token),
+      request<{ entries: MealEntry[] }>(`/groups/${groupId}/meal-plan`, token),
+    ])
+      .then(([nextDishes, menu]) => {
+        setDishes(nextDishes);
+        setEntries(menu.entries);
+        setDishId(nextDishes[0]?.id ?? "");
+      })
+      .catch((reason: Error) => setError(reason.message));
+  useEffect(() => {
+    void load();
+  }, [groupId, token]);
+  if (creating)
+    return (
+      <Meals
+        token={token}
+        groupId={groupId}
+        back={() => setCreating(false)}
+        onSaved={async (dish) => {
+          await request(`/groups/${groupId}/meal-plan/entries`, token, {
+            method: "POST",
+            body: JSON.stringify({ dishId: dish.id, date, mealType }),
+          });
+          setCreating(false);
+          void load();
+        }}
+      />
+    );
+  async function addDish() {
+    if (!dishId) return;
+    try {
+      await request(`/groups/${groupId}/meal-plan/entries`, token, {
+        method: "POST",
+        body: JSON.stringify({ dishId, date, mealType }),
+      });
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Ajout impossible.");
+    }
+  }
+  return (
+    <div className="menu-page">
+      <button className="back-link" onClick={back}>
+        ← Vue d'ensemble
+      </button>
+      <div className="page-heading">
+        <div>
+          <p className="kicker">Family Hub / Organisation</p>
+          <h1>
+            Menu de la semaine<span className="heading-dot">.</span>
+          </h1>
+          <p className="muted">
+            Réutilisez vos plats sans recopier les recettes.
+          </p>
+        </div>
+        <button className="outline-button" onClick={() => setCreating(true)}>
+          + Créer un plat
+        </button>
+      </div>
+      <section className="menu-add panel">
+        <h2>Ajouter au menu</h2>
+        <div className="menu-controls">
+          <input
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
+          <select
+            value={mealType}
+            onChange={(event) => setMealType(event.target.value)}
+          >
+            <option value="breakfast">Petit-déjeuner</option>
+            <option value="lunch">Déjeuner</option>
+            <option value="dinner">Dîner</option>
+            <option value="snack">Collation</option>
+          </select>
+          <select
+            value={dishId}
+            onChange={(event) => setDishId(event.target.value)}
+          >
+            <option value="">Choisir un plat</option>
+            {dishes.map((dish) => (
+              <option key={dish.id} value={dish.id}>
+                {dish.name}
+              </option>
+            ))}
+          </select>
+          <button className="primary-button" onClick={addDish}>
+            Ajouter
+          </button>
+          <button className="text-action" onClick={() => onNavigate("dishes")}>
+            Voir la bibliothèque
+          </button>
+        </div>
+        {error && <p className="form-message">{error}</p>}
+      </section>
+      <section className="menu-entries panel">
+        <h2>Plats planifiés</h2>
+        {entries.length ? (
+          entries.map((entry) => (
+            <div className="menu-entry" key={entry.id}>
+              <span>
+                {new Date(`${entry.date}T00:00:00`).toLocaleDateString(
+                  "fr-FR",
+                  { weekday: "long", day: "numeric", month: "long" },
+                )}
+              </span>
+              <strong>{entry.dishName}</strong>
+              <small>{entry.mealType}</small>
+            </div>
+          ))
+        ) : (
+          <Empty
+            icon="◌"
+            title="Aucun repas planifié"
+            text="Ajoutez un plat existant ou créez-en un directement depuis cette page."
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+
 // Affiche recettes
 function Meals({
   token,
   groupId,
   back,
+  initialDish,
+  onSaved,
 }: {
   token: string;
   groupId: string;
   back: () => void;
+  initialDish?: Dish;
+  onSaved?: (dish: Dish) => void | Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -882,12 +1226,23 @@ function Meals({
   const [products, setProducts] = useState<Product[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
-  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState("");
   const [category, setCategory] = useState("other");
+
+  useEffect(() => {
+    if (!initialDish) return;
+    setEditingId(initialDish.id);
+    setName(initialDish.name);
+    setDescription(initialDish.description ?? "");
+    setInstructions(initialDish.instructions ?? "");
+    setCategory(initialDish.category ?? "other");
+    setIngredients(initialDish.ingredients.map((ingredient) => ({ ...ingredient, quantity: String(ingredient.quantity), unitId: ingredient.unitId ?? "", notes: ingredient.notes ?? "" })));
+    setSteps((initialDish.steps ?? []).map((step) => ({ stepNumber: step.stepNumber, description: step.description, durationMinutes: step.durationMinutes == null ? "" : String(step.durationMinutes) })));
+  }, [initialDish]);
 
   useEffect(() => {
     request<Unit[]>("/products/units", token)
@@ -905,15 +1260,6 @@ function Meals({
     }, 180);
     return () => window.clearTimeout(timer);
   }, [search, token]);
-  // Charge plats
-  const loadDishes = () =>
-    request<Dish[]>(`/dishes/group/${groupId}`, token)
-      .then(setDishes)
-      .catch((reason: Error) => setError(reason.message));
-  useEffect(() => {
-    void loadDishes();
-  }, [groupId, token]);
-
   // Ajoute ingrédient
   const addIngredient = (product: Product) => {
     if (ingredients.some((ingredient) => ingredient.id === product.id)) return;
@@ -956,7 +1302,7 @@ function Meals({
     setError("");
     setSaved("");
     try {
-      await request(
+      const savedDish = await request<Dish>(
         editingId
           ? `/dishes/${editingId}?groupId=${groupId}`
           : `/dishes/group/${groupId}`,
@@ -966,12 +1312,20 @@ function Meals({
           body: JSON.stringify({
             name,
             description,
+            category,
             instructions,
             ingredients: ingredients.map(({ id, quantity, unitId, notes }) => ({
               productId: id,
               quantity: Number(quantity),
               unitId: unitId || undefined,
               notes,
+            })),
+            steps: steps.map((step, index) => ({
+              stepNumber: index + 1,
+              description: step.description,
+              durationMinutes: step.durationMinutes
+                ? Number(step.durationMinutes)
+                : undefined,
             })),
           }),
         },
@@ -985,8 +1339,9 @@ function Meals({
       setDescription("");
       setInstructions("");
       setIngredients([]);
+      setSteps([]);
       setEditingId(null);
-      void loadDishes();
+      await onSaved?.(savedDish);
     } catch (reason) {
       setError(
         reason instanceof Error ? reason.message : "Enregistrement impossible.",
@@ -996,22 +1351,6 @@ function Meals({
     }
   }
   const suggestions = search.trim() ? products : [];
-  // Edite recette
-  const editDish = (dish: Dish) => {
-    setEditingId(dish.id);
-    setName(dish.name);
-    setDescription(dish.description ?? "");
-    setInstructions(dish.instructions ?? "");
-    setIngredients(
-      dish.ingredients.map((ingredient) => ({
-        ...ingredient,
-        quantity: String(ingredient.quantity),
-        unitId: ingredient.unitId ?? "",
-        notes: ingredient.notes ?? "",
-      })),
-    );
-    setSaved("");
-  };
   return (
     <div className="recipe-page">
       <button className="back-link" onClick={back}>
@@ -1028,27 +1367,6 @@ function Meals({
           </p>
         </div>
       </div>
-      {dishes.length > 0 && (
-        <section className="dish-list">
-          <p className="kicker">Vos plats</p>
-          {dishes.map((dish) => (
-            <div className="dish-list-row" key={dish.id}>
-              <strong>{dish.name}</strong>
-              <span>
-                {dish.ingredients.length} ingrédient
-                {dish.ingredients.length > 1 ? "s" : ""}
-              </span>
-              <button
-                type="button"
-                className="text-action"
-                onClick={() => editDish(dish)}
-              >
-                Modifier
-              </button>
-            </div>
-          ))}
-        </section>
-      )}
       <form className="recipe-form" onSubmit={submit}>
         <section className="recipe-section">
           <p className="kicker">01 · Informations générales</p>
@@ -1064,6 +1382,19 @@ function Meals({
               onChange={setDescription}
             />
           </div>
+          <label className="field recipe-category">
+            <span>Catégorie</span>
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
+              <option value="other">Autre</option>
+              <option value="family">Familial</option>
+              <option value="quick">Rapide</option>
+              <option value="vegetarian">Végétarien</option>
+              <option value="dessert">Dessert</option>
+            </select>
+          </label>
         </section>
         <section className="recipe-section">
           <p className="kicker">02 · Ingrédients</p>
@@ -1178,6 +1509,71 @@ function Meals({
         </section>
         <section className="recipe-section">
           <p className="kicker">03 · Préparation</p>
+          <div className="steps-editor">
+            {steps.map((step, index) => (
+              <div className="step-row" key={`${step.stepNumber}-${index}`}>
+                <b>{index + 1}</b>
+                <textarea
+                  required
+                  rows={2}
+                  placeholder="Décrivez cette étape"
+                  value={step.description}
+                  onChange={(event) =>
+                    setSteps(
+                      steps.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, description: event.target.value }
+                          : item,
+                      ),
+                    )
+                  }
+                />
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  value={step.durationMinutes}
+                  onChange={(event) =>
+                    setSteps(
+                      steps.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, durationMinutes: event.target.value }
+                          : item,
+                      ),
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  className="remove-ingredient"
+                  aria-label="Supprimer l'étape"
+                  onClick={() =>
+                    setSteps(
+                      steps.filter((_, itemIndex) => itemIndex !== index),
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="text-action"
+            onClick={() =>
+              setSteps([
+                ...steps,
+                {
+                  stepNumber: steps.length + 1,
+                  description: "",
+                  durationMinutes: "",
+                },
+              ])
+            }
+          >
+            + Ajouter une étape
+          </button>
           <label className="field">
             <span>Instructions</span>
             <textarea

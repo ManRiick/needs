@@ -202,6 +202,7 @@ CREATE TABLE dishes (
     calories INTEGER,
     preparation_time INTEGER,
     cooking_time INTEGER,
+    category TEXT,
     servings NUMERIC(8, 2) NOT NULL DEFAULT 1,
     instructions TEXT,
     image_url TEXT,
@@ -218,6 +219,22 @@ CREATE TABLE dishes (
 CREATE UNIQUE INDEX dishes_global_name_unique ON dishes (lower(name)) WHERE group_id IS NULL;
 CREATE UNIQUE INDEX dishes_group_name_unique ON dishes (group_id, lower(name)) WHERE group_id IS NOT NULL;
 CREATE INDEX dishes_group_id_idx ON dishes (group_id);
+
+CREATE TABLE dish_steps (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dish_id UUID NOT NULL REFERENCES dishes(id) ON DELETE CASCADE,
+    step_number INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    duration_minutes INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT dish_steps_number_positive CHECK (step_number > 0),
+    CONSTRAINT dish_steps_description_not_blank CHECK (length(trim(description)) > 0),
+    CONSTRAINT dish_steps_duration_non_negative CHECK (duration_minutes IS NULL OR duration_minutes >= 0),
+    CONSTRAINT dish_steps_dish_number_unique UNIQUE (dish_id, step_number)
+);
+
+CREATE INDEX dish_steps_dish_idx ON dish_steps (dish_id, step_number);
 
 CREATE TABLE dish_ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -247,6 +264,7 @@ CREATE TABLE meal_plans (
 );
 
 CREATE INDEX meal_plans_group_date_idx ON meal_plans (group_id, start_date, end_date);
+CREATE UNIQUE INDEX meal_plans_group_start_unique ON meal_plans (group_id, start_date);
 
 CREATE TABLE meal_plan_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -423,7 +441,7 @@ BEGIN
     FOREACH table_name IN ARRAY ARRAY[
         'users', 'groups', 'categories', 'lists', 'list_items', 'comments',
         'products', 'shopping_items', 'dishes', 'meal_plans',
-        'meal_plan_entries', 'conversations', 'messages', 'media_items',
+        'dish_steps', 'meal_plan_entries', 'conversations', 'messages', 'media_items',
         'watchlist_items', 'media_reviews', 'notifications'
     ] LOOP
         EXECUTE format(

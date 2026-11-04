@@ -10,6 +10,9 @@ import { ProductsController } from "./products.controller";
 import { ProductsService } from "./products.service";
 import { DishesController } from "./dishes.controller";
 import { DishesService } from "./dishes.service";
+import { GroupDishesController } from "./group-dishes.controller";
+import { MealPlansController } from "./meal-plans.controller";
+import { MealPlansService } from "./meal-plans.service";
 
 @Module({
   imports: [
@@ -24,12 +27,15 @@ import { DishesService } from "./dishes.service";
     GroupsController,
     ProductsController,
     DishesController,
+    GroupDishesController,
+    MealPlansController,
   ],
   providers: [
     AuthService,
     GroupsService,
     ProductsService,
     DishesService,
+    MealPlansService,
     RealtimeGateway,
   ],
 })
