@@ -20,7 +20,26 @@ type Overview = {
   }[];
   members: { id: string; firstName: string; lastName: string; role: string }[];
 };
+type Product = { id: string; name: string; category: string };
+type Unit = { id: string; name: string; abbreviation: string };
+type RecipeIngredient = Product & {
+  quantity: string;
+  unitId: string;
+  notes: string;
+};
+type Dish = {
+  id: string;
+  name: string;
+  description?: string;
+  instructions?: string;
+  ingredients: (Product & {
+    quantity: number;
+    unitId?: string;
+    notes?: string;
+  })[];
+};
 
+// Envoie requête
 async function request<T>(
   path: string,
   token: string,
@@ -44,6 +63,7 @@ async function request<T>(
   return data;
 }
 
+// Affiche application
 function App() {
   const [token, setToken] = useState(localStorage.getItem(TOKEN));
   const [theme, setTheme] = useState<Theme>(() => {
@@ -65,6 +85,7 @@ function App() {
     localStorage.setItem(THEME, theme);
   }, [theme]);
 
+  // Change thème
   const toggleTheme = () =>
     setTheme((current) => (current === "light" ? "dark" : "light"));
 
@@ -105,12 +126,14 @@ function App() {
     };
   }, [token]);
 
+  // Ferme session
   const logout = () => {
     localStorage.removeItem(TOKEN);
     localStorage.removeItem(GROUP);
     setToken(null);
     setUser(null);
   };
+  // Change page
   const navigate = (next: string) => {
     setPage(next);
     history.pushState({}, "", `/groups/${active?.id ?? ""}/${next}`);
@@ -143,6 +166,7 @@ function App() {
     );
   return (
     <Shell
+      token={token}
       user={user}
       families={families}
       active={active ?? families[0]}
@@ -162,6 +186,7 @@ function App() {
   );
 }
 
+// Affiche champ
 function Field({
   label,
   value,
@@ -185,6 +210,7 @@ function Field({
     </label>
   );
 }
+// Affiche authentification
 function Auth({
   theme,
   onToggleTheme,
@@ -202,8 +228,10 @@ function Auth({
     password: "",
   });
   const [error, setError] = useState("");
+  // Met à jour formulaire
   const update = (key: keyof typeof form) => (value: string) =>
     setForm({ ...form, [key]: value });
+  // Soumet authentification
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -302,6 +330,7 @@ function Auth({
   );
 }
 
+// Affiche accueil
 function NoFamily({
   token,
   user,
@@ -321,6 +350,7 @@ function NoFamily({
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [createdCode, setCreatedCode] = useState("");
+  // Crée groupe
   async function create(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -337,6 +367,7 @@ function NoFamily({
       );
     }
   }
+  // Rejoint groupe
   async function join(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -366,8 +397,8 @@ function NoFamily({
         <p className="kicker">Bienvenue, {user.firstName}</p>
         <h1>On commence par créer votre maison.</h1>
         <p className="lead">
-          Family Hub devient l'endroit où votre famille se retrouve pour
-          décider, partager et avancer.
+          XYZ devient l'endroit où votre famille se retrouve pour décider,
+          partager et avancer.
         </p>
         <div className="group-actions">
           <form className="create-group" onSubmit={create}>
@@ -413,7 +444,9 @@ const nav = [
   { id: "books", icon: "▤", label: "Livres" },
   { id: "calendar", icon: "▦", label: "Calendrier" },
 ];
+// Affiche interface
 function Shell({
+  token,
   user,
   families,
   theme,
@@ -427,6 +460,7 @@ function Shell({
   onNavigate,
   onLogout,
 }: {
+  token: string;
   user: User;
   families: Family[];
   theme: Theme;
@@ -504,7 +538,7 @@ function Shell({
             ☰
           </button>
           <div className="breadcrumb">
-            <span>Family Hub</span>
+            <span>XYZ</span>
             <b>/</b>
             <strong>{active.name}</strong>
           </div>
@@ -524,7 +558,12 @@ function Shell({
           {page === "overview" ? (
             <Overview data={overview} user={user} navigate={onNavigate} />
           ) : (
-            <Module page={page} back={() => onNavigate("overview")} />
+            <Module
+              page={page}
+              back={() => onNavigate("overview")}
+              token={token}
+              groupId={active.id}
+            />
           )}
         </div>
       </main>
@@ -532,6 +571,7 @@ function Shell({
   );
 }
 
+// Affiche thème
 function ThemeToggle({
   theme,
   onToggle,
@@ -551,6 +591,7 @@ function ThemeToggle({
   );
 }
 
+// Change groupe
 function FamilySwitcher({
   families,
   active,
@@ -593,6 +634,7 @@ function FamilySwitcher({
     </div>
   );
 }
+// Affiche aperçu
 function Overview({
   data,
   user,
@@ -720,6 +762,7 @@ function Overview({
     </>
   );
 }
+// Affiche panneau
 function Panel({
   title,
   action,
@@ -741,6 +784,7 @@ function Panel({
     </section>
   );
 }
+// Affiche statistique
 function Stat({
   label,
   value,
@@ -760,6 +804,7 @@ function Stat({
     </div>
   );
 }
+// Affiche vide
 function Empty({
   icon,
   title,
@@ -786,14 +831,27 @@ function Empty({
     </div>
   );
 }
-function Module({ page, back }: { page: string; back: () => void }) {
+// Affiche module
+function Module({
+  page,
+  back,
+  token,
+  groupId,
+}: {
+  page: string;
+  back: () => void;
+  token: string;
+  groupId: string;
+}) {
   const item = nav.find((entry) => entry.id === page);
+  if (page === "meals")
+    return <Meals token={token} groupId={groupId} back={back} />;
   return (
     <div className="module-page">
       <button className="back-link" onClick={back}>
         ← Vue d'ensemble
       </button>
-      <p className="kicker">Family Hub / {item?.label ?? "Espace groupe"}</p>
+      <p className="kicker">XYZ / {item?.label ?? "Espace groupe"}</p>
       <h1>{item?.label ?? "Espace groupe"}</h1>
       <div className="module-placeholder">
         <span>✦</span>
@@ -803,6 +861,346 @@ function Module({ page, back }: { page: string; back: () => void }) {
           backend seront disponibles.
         </p>
       </div>
+    </div>
+  );
+}
+
+// Affiche recettes
+function Meals({
+  token,
+  groupId,
+  back,
+}: {
+  token: string;
+  groupId: string;
+  back: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [search, setSearch] = useState("");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState("");
+  const [category, setCategory] = useState("other");
+
+  useEffect(() => {
+    request<Unit[]>("/products/units", token)
+      .then(setUnits)
+      .catch((reason: Error) => setError(reason.message));
+  }, [token]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      request<Product[]>(
+        `/products?search=${encodeURIComponent(search)}`,
+        token,
+      )
+        .then(setProducts)
+        .catch((reason: Error) => setError(reason.message));
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [search, token]);
+  // Charge plats
+  const loadDishes = () =>
+    request<Dish[]>(`/dishes/group/${groupId}`, token)
+      .then(setDishes)
+      .catch((reason: Error) => setError(reason.message));
+  useEffect(() => {
+    void loadDishes();
+  }, [groupId, token]);
+
+  // Ajoute ingrédient
+  const addIngredient = (product: Product) => {
+    if (ingredients.some((ingredient) => ingredient.id === product.id)) return;
+    setIngredients([
+      ...ingredients,
+      { ...product, quantity: "", unitId: units[0]?.id ?? "", notes: "" },
+    ]);
+    setSearch("");
+  };
+  // Crée ingrédient
+  const createProduct = async () => {
+    if (!search.trim()) return;
+    try {
+      const product = await request<Product>("/products", token, {
+        method: "POST",
+        body: JSON.stringify({ name: search, category }),
+      });
+      addIngredient(product);
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Création impossible.",
+      );
+    }
+  };
+  // Modifie ingrédient
+  const updateIngredient = (
+    id: string,
+    field: "quantity" | "unitId" | "notes",
+    value: string,
+  ) =>
+    setIngredients(
+      ingredients.map((ingredient) =>
+        ingredient.id === id ? { ...ingredient, [field]: value } : ingredient,
+      ),
+    );
+  // Enregistre recette
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    setSaved("");
+    try {
+      await request(
+        editingId
+          ? `/dishes/${editingId}?groupId=${groupId}`
+          : `/dishes/group/${groupId}`,
+        token,
+        {
+          method: editingId ? "PATCH" : "POST",
+          body: JSON.stringify({
+            name,
+            description,
+            instructions,
+            ingredients: ingredients.map(({ id, quantity, unitId, notes }) => ({
+              productId: id,
+              quantity: Number(quantity),
+              unitId: unitId || undefined,
+              notes,
+            })),
+          }),
+        },
+      );
+      setSaved(
+        editingId
+          ? "Plat modifié dans votre groupe."
+          : "Plat enregistré dans votre groupe.",
+      );
+      setName("");
+      setDescription("");
+      setInstructions("");
+      setIngredients([]);
+      setEditingId(null);
+      void loadDishes();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Enregistrement impossible.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+  const suggestions = search.trim() ? products : [];
+  // Edite recette
+  const editDish = (dish: Dish) => {
+    setEditingId(dish.id);
+    setName(dish.name);
+    setDescription(dish.description ?? "");
+    setInstructions(dish.instructions ?? "");
+    setIngredients(
+      dish.ingredients.map((ingredient) => ({
+        ...ingredient,
+        quantity: String(ingredient.quantity),
+        unitId: ingredient.unitId ?? "",
+        notes: ingredient.notes ?? "",
+      })),
+    );
+    setSaved("");
+  };
+  return (
+    <div className="recipe-page">
+      <button className="back-link" onClick={back}>
+        ← Vue d'ensemble
+      </button>
+      <p className="kicker">XYZ / Menus</p>
+      <div className="page-heading">
+        <div>
+          <h1>
+            Créer un plat<span className="heading-dot">.</span>
+          </h1>
+          <p className="muted">
+            Composez une recette avec le catalogue partagé.
+          </p>
+        </div>
+      </div>
+      {dishes.length > 0 && (
+        <section className="dish-list">
+          <p className="kicker">Vos plats</p>
+          {dishes.map((dish) => (
+            <div className="dish-list-row" key={dish.id}>
+              <strong>{dish.name}</strong>
+              <span>
+                {dish.ingredients.length} ingrédient
+                {dish.ingredients.length > 1 ? "s" : ""}
+              </span>
+              <button
+                type="button"
+                className="text-action"
+                onClick={() => editDish(dish)}
+              >
+                Modifier
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
+      <form className="recipe-form" onSubmit={submit}>
+        <section className="recipe-section">
+          <p className="kicker">01 · Informations générales</p>
+          <div className="recipe-fields">
+            <Field
+              label={editingId ? "Nom du plat modifié" : "Nom du plat"}
+              value={name}
+              onChange={setName}
+            />
+            <Field
+              label="Description"
+              value={description}
+              onChange={setDescription}
+            />
+          </div>
+        </section>
+        <section className="recipe-section">
+          <p className="kicker">02 · Ingrédients</p>
+          <label className="field ingredient-search">
+            <span>Rechercher dans le catalogue</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Ex. oeuf, tomate, huile olive"
+            />
+            {suggestions.length > 0 && (
+              <div className="suggestions">
+                {suggestions.map((product) => (
+                  <button
+                    type="button"
+                    key={product.id}
+                    onClick={() => addIngredient(product)}
+                  >
+                    <strong>{product.name}</strong>
+                    <small>{product.category}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+            {search.trim() && !suggestions.length && (
+              <div className="no-suggestion">
+                <span>Aucun ingrédient trouvé. Ajouter « {search} » ?</span>
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                >
+                  <option value="other">Autre</option>
+                  <option value="vegetables">Légumes</option>
+                  <option value="fruits">Fruits</option>
+                  <option value="dairy">Produits laitiers et œufs</option>
+                  <option value="meat-fish">Viandes et poissons</option>
+                  <option value="starches">Féculents</option>
+                  <option value="grocery">Épicerie</option>
+                  <option value="herbs-spices">Herbes et épices</option>
+                </select>
+                <button
+                  type="button"
+                  className="text-action"
+                  onClick={createProduct}
+                >
+                  Ajouter
+                </button>
+              </div>
+            )}
+          </label>
+          <div className="ingredient-list">
+            {ingredients.map((ingredient) => (
+              <div className="ingredient-row" key={ingredient.id}>
+                <strong>{ingredient.name}</strong>
+                <input
+                  aria-label={`Quantité de ${ingredient.name}`}
+                  type="number"
+                  min="0.001"
+                  step="0.001"
+                  required
+                  placeholder="Qté"
+                  value={ingredient.quantity}
+                  onChange={(event) =>
+                    updateIngredient(
+                      ingredient.id,
+                      "quantity",
+                      event.target.value,
+                    )
+                  }
+                />
+                <select
+                  aria-label={`Unité de ${ingredient.name}`}
+                  value={ingredient.unitId}
+                  onChange={(event) =>
+                    updateIngredient(
+                      ingredient.id,
+                      "unitId",
+                      event.target.value,
+                    )
+                  }
+                >
+                  <option value="">Unité</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.abbreviation}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  aria-label={`Note pour ${ingredient.name}`}
+                  placeholder="Note (facultatif)"
+                  value={ingredient.notes}
+                  onChange={(event) =>
+                    updateIngredient(ingredient.id, "notes", event.target.value)
+                  }
+                />
+                <button
+                  type="button"
+                  className="remove-ingredient"
+                  aria-label={`Supprimer ${ingredient.name}`}
+                  onClick={() =>
+                    setIngredients(
+                      ingredients.filter((item) => item.id !== ingredient.id),
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="recipe-section">
+          <p className="kicker">03 · Préparation</p>
+          <label className="field">
+            <span>Instructions</span>
+            <textarea
+              value={instructions}
+              onChange={(event) => setInstructions(event.target.value)}
+              rows={5}
+            />
+          </label>
+        </section>
+        {error && <p className="form-message">{error}</p>}
+        {saved && <p className="success-message">{saved}</p>}
+        <button
+          className="primary-button recipe-submit"
+          disabled={loading || !name.trim()}
+        >
+          {loading
+            ? "Enregistrement…"
+            : editingId
+              ? "Enregistrer les modifications"
+              : "Enregistrer le plat"}
+          <span>→</span>
+        </button>
+      </form>
     </div>
   );
 }

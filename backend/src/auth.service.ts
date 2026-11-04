@@ -15,8 +15,10 @@ export class AuthService implements OnModuleDestroy {
     connectionString: process.env.DATABASE_URL,
   });
 
+  // Initialise service
   constructor(private readonly jwtService: JwtService) {}
 
+  // Crée utilisateur
   async register(registerDto: RegisterDto) {
     const email = registerDto.email.trim().toLowerCase();
     const passwordHash = await bcrypt.hash(registerDto.password, 12);
@@ -44,6 +46,7 @@ export class AuthService implements OnModuleDestroy {
     }
   }
 
+  // Authentifie utilisateur
   async login(loginDto: LoginDto) {
     const email = loginDto.email.trim().toLowerCase();
     const result = await this.pool.query(
@@ -79,6 +82,7 @@ export class AuthService implements OnModuleDestroy {
     };
   }
 
+  // Recherche profil
   async findProfile(userId: string) {
     const result = await this.pool.query(
       `SELECT id, email, first_name AS "firstName", last_name AS "lastName"
@@ -88,11 +92,13 @@ export class AuthService implements OnModuleDestroy {
     return { user: result.rows[0] ?? null };
   }
 
+  // Ferme connexion
   async onModuleDestroy() {
     await this.pool.end();
   }
 }
 
+// Détecte doublon
 function isUniqueViolation(error: unknown): error is { code: string } {
   return (
     typeof error === "object" &&

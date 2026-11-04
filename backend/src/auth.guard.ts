@@ -13,8 +13,10 @@ export type AuthenticatedRequest = {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  // Initialise garde
   constructor(private readonly jwtService: JwtService) {}
 
+  // Vérifie session
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authorization = request.headers.authorization;

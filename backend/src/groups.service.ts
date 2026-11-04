@@ -14,6 +14,7 @@ export class GroupsService implements OnModuleInit, OnModuleDestroy {
     connectionString: process.env.DATABASE_URL,
   });
 
+  // Initialise groupes
   async onModuleInit() {
     await this.pool.query(
       `ALTER TABLE "groups" ADD COLUMN IF NOT EXISTS code TEXT`,
@@ -29,6 +30,7 @@ export class GroupsService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
+  // Recherche groupes
   async findForUser(userId: string) {
     const result = await this.pool.query(
       `SELECT g.id, g.name, g.code, gm.role, gm.joined_at AS "joinedAt"
@@ -39,6 +41,7 @@ export class GroupsService implements OnModuleInit, OnModuleDestroy {
     return result.rows;
   }
 
+  // Crée groupe
   async createForUser(userId: string, dto: CreateGroupDto) {
     const client = await this.pool.connect();
     try {
@@ -59,6 +62,7 @@ export class GroupsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  // Rejoint groupe
   async joinByCode(userId: string, dto: { code: string }) {
     const client = await this.pool.connect();
     try {
@@ -91,10 +95,12 @@ export class GroupsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  // Génère code
   private createCode() {
     return randomBytes(5).toString("hex").slice(0, 8).toUpperCase();
   }
 
+  // Charge aperçu
   async getOverview(userId: string, groupId: string) {
     const membership = await this.pool.query(
       `SELECT g.id, g.name, gm.role FROM "groups" g
@@ -127,6 +133,7 @@ export class GroupsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  // Ferme connexion
   async onModuleDestroy() {
     await this.pool.end();
   }

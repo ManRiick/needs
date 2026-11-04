@@ -14,8 +14,10 @@ import type { Socket } from "socket.io";
   },
 })
 export class RealtimeGateway {
+  // Initialise passerelle
   constructor(private readonly jwtService: JwtService) {}
 
+  // Gère connexion
   handleConnection(socket: Socket) {
     const user = this.getUserFromSocket(socket);
     socket.data.user = user;
@@ -27,6 +29,7 @@ export class RealtimeGateway {
   }
 
   @SubscribeMessage("session:check")
+  // Vérifie session
   handleSessionCheck(
     @ConnectedSocket() socket: Socket,
     @MessageBody() _payload: { email?: string } = {},
@@ -38,6 +41,7 @@ export class RealtimeGateway {
     });
   }
 
+  // Lit utilisateur
   private getUserFromSocket(socket: Socket): AccessTokenPayload | null {
     const token = socket.handshake.auth?.token;
 

@@ -2,6 +2,8 @@
 -- This file is executed automatically only when PostgreSQL initializes an empty volume.
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TYPE user_status AS ENUM ('active', 'inactive', 'banned');
 CREATE TYPE system_role AS ENUM ('user', 'super_admin');
@@ -141,17 +143,23 @@ CREATE INDEX comments_parent_idx ON comments (parent_comment_id)
 CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    normalized_name TEXT NOT NULL,
     description TEXT,
+    category TEXT NOT NULL DEFAULT 'other',
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
     estimated_price NUMERIC(12, 2),
     currency CHAR(3) NOT NULL DEFAULT 'EUR',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT products_name_not_blank CHECK (length(trim(name)) > 0),
+    CONSTRAINT products_normalized_name_not_blank CHECK (length(trim(normalized_name)) > 0),
+    CONSTRAINT products_category_not_blank CHECK (length(trim(category)) > 0),
     CONSTRAINT products_estimated_price_non_negative CHECK (estimated_price IS NULL OR estimated_price >= 0),
     CONSTRAINT products_currency_uppercase CHECK (currency = upper(currency))
 );
 
-CREATE UNIQUE INDEX products_name_unique ON products (lower(name));
+CREATE UNIQUE INDEX products_name_unique ON products (normalized_name);
+CREATE INDEX products_normalized_name_search_idx ON products USING gin (normalized_name gin_trgm_ops);
 
 CREATE TABLE units (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
