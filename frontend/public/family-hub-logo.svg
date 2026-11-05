@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 768" role="img" aria-labelledby="title desc">
+  <title id="title">Family Hub</title>
+  <desc id="desc">Maison avec couverts, liste et feuilles colorées</desc>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1888ff"/><stop offset="1" stop-color="#2f8feb"/></linearGradient>
+    <linearGradient id="yellow" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff323"/><stop offset="1" stop-color="#ffc640"/></linearGradient>
+    <linearGradient id="pink" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f50068"/><stop offset="1" stop-color="#ff176c"/></linearGradient>
+  </defs>
+  <path d="M174 327 384 167l210 160" fill="none" stroke="url(#blue)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M211 326v192m346-192v192" fill="none" stroke="url(#blue)" stroke-width="28" stroke-linecap="round"/>
+  <path d="M558 246v-59h47v95" fill="none" stroke="url(#blue)" stroke-width="28" stroke-linejoin="round"/>
+  <path d="M306 280v114c0 25 14 43 34 54v77h34v-77c20-11 34-29 34-54V280m-102 0v58m34-58v58m34-58v58" fill="none" stroke="url(#yellow)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M431 283c-32 31-53 72-53 111 0 29 13 47 35 58v73h36v-73c22-11 35-29 35-58 0-39-21-80-53-111z" fill="url(#yellow)"/>
+  <path d="m438 373 18 18 31-36m-49 90 18 18 31-36m-49 90 18 18 31-36" fill="none" stroke="url(#pink)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M504 391h66m-66 54h66m-66 54h66" fill="none" stroke="url(#pink)" stroke-width="14" stroke-linecap="round"/>
+  <path d="M222 525c-70-15-99-70-98-126 55 5 103 31 125 82 10 23 10 44 5 62-11-25-24-45-47-65" fill="url(#pink)"/>
+  <path d="M254 533c2-62 35-95 87-111 2 50-17 91-59 111-10 5-19 7-28 8z" fill="url(#pink)"/>
+  <path d="M166 563c109-49 326-54 436 0" fill="none" stroke="url(#yellow)" stroke-width="25" stroke-linecap="round"/>
+</svg>

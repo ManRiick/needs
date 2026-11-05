@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { request } from "./api";
+import { AppLogo } from "./logo";
 import type { Family, Theme, User } from "./types";
 
 // Affiche champ
@@ -103,9 +104,7 @@ export function Auth({
     <main className="auth-page">
       <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       <section className="auth-story">
-        <span className="brand">
-          family<span>hub</span>
-        </span>
+        <AppLogo />
         <p className="kicker">L'organisation, ensemble</p>
         <h1>La maison tourne mieux quand tout le monde voit la même chose.</h1>
         <p className="story-copy">

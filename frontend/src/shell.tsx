@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Overview } from "./overview";
+import { AppLogo } from "./logo";
 import { DishesPage, WeeklyMenu } from "./recipes";
 import type { Family, Overview as OverviewData, Theme, User } from "./types";
 
@@ -68,9 +69,7 @@ export function Shell({
     <div className="app-shell">
       <aside className={open ? "sidebar open" : "sidebar"}>
         <div className="sidebar-top">
-          <span className="brand">
-            family<span>hub</span>
-          </span>
+          <AppLogo compact />
           <button className="close-sidebar" onClick={() => setOpen(false)}>
             ×
           </button>
