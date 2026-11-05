@@ -27,7 +27,8 @@ export class MealPlansService implements OnModuleInit, OnModuleDestroy {
     await this.assertMembership(userId, groupId);
     const start = startDate ?? mondayOfCurrentWeek();
     const result = await this.pool.query(
-      `SELECT mpe.id, mpe.date, mpe.meal_type AS "mealType", mpe.servings, mpe.notes,
+      `SELECT mpe.id, to_char(mpe.date, 'YYYY-MM-DD') AS date,
+              mpe.meal_type AS "mealType", mpe.servings, mpe.notes,
               d.id AS "dishId", d.name AS "dishName"
        FROM meal_plans mp
        JOIN meal_plan_entries mpe ON mpe.meal_plan_id = mp.id
@@ -73,7 +74,7 @@ export class MealPlansService implements OnModuleInit, OnModuleDestroy {
       const entry = await client.query(
         `INSERT INTO meal_plan_entries (meal_plan_id, dish_id, date, meal_type, servings, notes)
          VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, date, meal_type AS "mealType", servings, notes`,
+         RETURNING id, to_char(date, 'YYYY-MM-DD') AS date, meal_type AS "mealType", servings, notes`,
         [
           planId,
           dto.dishId,

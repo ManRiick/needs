@@ -80,9 +80,11 @@ export class CreateDishDto {
 
   @ValidateNested({ each: true })
   @Type(() => DishIngredientDto)
+  @IsOptional()
   ingredients!: DishIngredientDto[];
 
   @ValidateNested({ each: true })
   @Type(() => DishStepDto)
+  @IsOptional()
   steps!: DishStepDto[];
 }
